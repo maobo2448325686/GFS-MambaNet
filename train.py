@@ -104,10 +104,9 @@ def train_net(net, device, data_path, val_path, test_path, log_dir, ModelName='N
         # val
         if epoch >= 0:
             with torch.no_grad():
-                val(net, device, epoch, val_path)
-                _, _, F1_test = test(net, device, epoch, test_path)
-                if F1_test > best_f1:
-                    best_f1 = F1_test
+                _, _, F1 = val(net, device, epoch, val_path)
+                if F1 > best_f1:
+                    best_f1 = F1
                     modelpath_best = 'best_' + 'f1_' + str(best_f1) + '.pth'
                     torch.save(net.state_dict(), log_dir + "/" + modelpath_best)
                     print("Best model saved! epoch: " + str(epoch))
@@ -190,91 +189,6 @@ def val(net, device, epoc, val_DataPath):
                 'F1': '%.2f' % F1})
             t.update(1)
 
-    Indicators2 = Index(TPSum, TNSum, FPSum, FNSum, C_Sum_or, UC_Sum_or)
-    OA, Precision, Recall, F1 = Indicators2.ObjectExtract_indicators()
-    IoU, c_IoU, uc_IoU = Indicators2.IOU_indicator()
-    val_acc.write('mIou = ' + str(float('%2f' % IoU)) + ',' + 'c_mIoU = ' +
-                  str(float('%2f' % (c_IoU))) + ',' +
-                  'uc_mIoU = ' + str(float('%2f' % (uc_IoU))) + ',' +
-                  'PRE = ' + str(float('%2f' % (Precision))) + ',' +
-                  'REC = ' + str(float('%2f' % (Recall))) + ',' +
-                  'F1 = ' + str(float('%2f' % (F1))) + '\n')
-    val_acc.close()
-    return OA, IoU, F1
-
-
-def test(net, device, epoc, val_DataPath):
-    net.eval()
-
-    # 匹配 image 文件夹中的 .png 和 .tif 文件
-    image_png = glob.glob(os.path.join(val_DataPath, 'image/*.png'))
-    image_tif = glob.glob(os.path.join(val_DataPath, 'image/*.tif'))
-    image = image_png + image_tif  # 合并两个列表
-
-    # 匹配 label 文件夹中的 .png 和 .tif 文件
-    label_png = glob.glob(os.path.join(val_DataPath, 'label/*.png'))
-    label_tif = glob.glob(os.path.join(val_DataPath, 'label/*.tif'))
-    label = label_png + label_tif  # 合并两个列表
-
-    trans = Transforms.Compose([Transforms.ToTensor()])
-    IoU, c_IoU, uc_IoU, OA, Precision, Recall, F1 = 0, 0, 0, 0, 0, 0, 0
-    num = 0
-    total_loss_val = 0.
-    BCE_loss = nn.BCELoss()
-    TPSum, TNSum, FPSum, FNSum, C_Sum_or, UC_Sum_or = 0, 0, 0, 0, 0, 0
-    val_acc = open(log_dir + '/test_acc.txt', 'a')
-    val_acc.write('===============================' + 'epoch=' + str(epoc) + '==============================\n')
-    with tqdm(total=len(image), desc='Test Epoch #{}'.format(epoc), colour='blue') as t:
-        for val_path, label_path in zip(image, label):
-            num += 1
-
-            val_img = cv2.imread(val_path)
-            val_label = cv2.imread(label_path)
-            val_label = cv2.cvtColor(val_label, cv2.COLOR_BGR2GRAY)
-            val_img = trans(val_img)
-
-            val_img = val_img.unsqueeze(0)
-            val_img = val_img.to(device=device, dtype=torch.float32)
-
-            mask = trans(val_label).to(device=device, dtype=torch.float32)
-
-            pred = net(val_img)
-
-            dice_loss_val = dice_loss(pred, mask)
-            bce_loss_val = BCE_loss(pred, mask.unsqueeze(1))
-            loss_val = alpha * dice_loss_val+ (1 - alpha) * bce_loss_val
-
-            total_loss_val += loss_val.item()
-
-            # acquire result-vmamba
-            pred = np.array(pred.data.cpu()[0])[0]
-            # binary map
-            pred[pred >= 0.5] = 255
-            pred[pred < 0.5] = 0
-            monfusion_matrix = Evaluation(label=val_label, pred=pred)
-            TP, TN, FP, FN, c_num_or, uc_num_or = monfusion_matrix.ConfusionMatrix()
-            TPSum += TP
-            TNSum += TN
-            FPSum += FP
-            FNSum += FN
-            C_Sum_or += c_num_or
-            UC_Sum_or += uc_num_or
-
-            if num > 0:
-                Indicators = Index(TPSum, TNSum, FPSum, FNSum, C_Sum_or, UC_Sum_or)
-                IoU, c_IoU, uc_IoU = Indicators.IOU_indicator()
-                OA, Precision, Recall, F1 = Indicators.ObjectExtract_indicators()
-
-            t.set_postfix({
-                'total_loss_val': '%.4f' % (total_loss_val / num),
-                'OA': '%.2f' % OA,
-                'mIoU': '%.2f' % IoU,
-                'c_IoU': '%.2f' % c_IoU,
-                'uc_IoU': '%.2f' % uc_IoU,
-                'PRE': '%.2f' % Precision,
-                'REC': '%.2f' % Recall,
-                'F1': '%.2f' % F1})
-            t.update(1)
     Indicators2 = Index(TPSum, TNSum, FPSum, FNSum, C_Sum_or, UC_Sum_or)
     OA, Precision, Recall, F1 = Indicators2.ObjectExtract_indicators()
     IoU, c_IoU, uc_IoU = Indicators2.IOU_indicator()
