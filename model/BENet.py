@@ -69,7 +69,7 @@ class BSM(nn.Module):
         )
         self.conv1 = nn.Conv2d(channel1, channel1, 1)
         # 原始网络sparse_size设置为8
-        self.ssa8 = Sparse_Self_Attention(channel1, num_heads=8, sparse_size=4)
+        self.ssa8 = Sparse_Self_Attention(channel1, num_heads=8, sparse_size=8)
         self.spam = SPAM()
 
     def forward(self, x1, x2):
