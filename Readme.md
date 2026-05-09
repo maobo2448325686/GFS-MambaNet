@@ -1,4 +1,4 @@
-# GFS-MambaNet: A Global Feature Sparsification State Space Network for Building Extraction
+# A Global Feature Sparsification State Space Model for Building Roof Extraction from Non-orthorectified Remote Sensing Imagery
 
 ### Environment
 
