@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 alpha = 1
 #
-def train_net(net, device, data_path, val_path, test_path, log_dir, ModelName='Net-vmamba', epochs=100, batch_size=4,
+def train_net(net, device, data_path, val_path, log_dir, ModelName='Net-vmamba', epochs=100, batch_size=4,
               lr=0.0001, resume_from=None):
     # print(net)
     # Load dataset
@@ -46,9 +46,6 @@ def train_net(net, device, data_path, val_path, test_path, log_dir, ModelName='N
             net.load_state_dict(torch.load(resume_from, map_location=device))
             # 提取批次号
             start_epoch = 56
-            print("Switching to SGD optimizer")
-            optimizer = optim.SGD(net.parameters(), lr=lr, momentum=0.9)  # 使用当前的学习率
-            scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80], gamma=0.9)
             print(f"Resuming from epoch {start_epoch}")
         else:
             print(f"Pretrained model file {resume_from} not found. Starting from scratch.")
@@ -57,12 +54,6 @@ def train_net(net, device, data_path, val_path, test_path, log_dir, ModelName='N
     best_f1 = 0.
 
     for epoch in range(start_epoch + 1, epochs + 1):
-
-        # 切换到 SGD 优化器
-        # if epoch == 66:
-        #     print("Switching to SGD optimizer")
-        #     optimizer = optim.SGD(net.parameters(), lr=lr * (0.9 ** 10), momentum=0.9)  # 使用当前的学习率
-        #     scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[80, 95, 110, 125, 140], gamma=0.9)
 
 
         net.train()
@@ -206,14 +197,13 @@ if __name__ == '__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     net = BENet()
     net.to(device=device)
-    log_dir = "result_sparse_4/chinacity"
+    log_dir = ""
 
     os.makedirs(log_dir, exist_ok=True)
 
-    train_path = r"C:\Users\WorkStation01\Desktop\mb\data\be\Building_Instances_of_Typical_Cities_in_China512\train"
-    val_path = r"C:\Users\WorkStation01\Desktop\mb\data\be\Building_Instances_of_Typical_Cities_in_China512\val"
-    test_path = r"C:\Users\WorkStation01\Desktop\mb\data\be\Building_Instances_of_Typical_Cities_in_China512\test"
+    train_path = r""
+    val_path = r""
 
     # 指定从哪个预训练模型继续训练
     resume_from = None
-    train_net(net, device, train_path, val_path, test_path, log_dir, batch_size=8, epochs=100, lr=0.0001, resume_from=resume_from)
+    train_net(net, device, train_path, val_path, log_dir, batch_size=8, epochs=100, lr=0.0001, resume_from=resume_from)

@@ -17,33 +17,6 @@ from tqdm import tqdm
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 
-
-
-def img(pr, gt, filename):
-    pr = (pr > 0.5).float()
-    pr = pr[0, 0].cpu().detach().numpy()  # 转换为 NumPy 数组
-
-    # 确保 gt 的值是二值的（0 或 1）
-    gt = (gt > 0.5).astype(np.uint8)
-
-    tp = np.logical_and(pr == 1, gt == 1)
-    fp = np.logical_and(pr == 1, gt == 0)
-    tn = np.logical_and(pr == 0, gt == 0)
-    fn = np.logical_and(pr == 0, gt == 1)
-
-    image = np.zeros([512, 512, 3], dtype=np.uint8)
-
-    image[tp] = [255, 255, 255]  # 真正例 (白色)
-    image[fp] = [232, 68, 69]      # 假正例 (红色)
-    image[tn] = [0, 0, 0]        # 真负例 (黑色)
-    image[fn] = [0, 173, 239]      # 假负例 (绿色)
-
-    res_image = Image.fromarray(image)
-    save_path = os.path.join(image_pre_dir, filename)
-    # print()
-    res_image.save(save_path)
-
-
 #
 def test_net(net, device, test_path, ModelName='BENet', epochs=100):
     for epoch in range(epochs):
@@ -108,9 +81,6 @@ def test(net, device, modelpath, test_DataPath):
 
             pred = net(test_img)
 
-            # image_pre
-            img(pred, test_label, filename)
-
             # acquire result-vmamba
             pred = np.array(pred.data.cpu()[0])[0]
             # binary map
@@ -157,13 +127,13 @@ if __name__ == '__main__':
     net = BENet()
     net.to(device=device)
 
-    log_dir = r"result/whu"
-    image_pre_dir = r"result/whu/prediction"
+    log_dir = r""
+    image_pre_dir = r""
 
     os.makedirs(image_pre_dir, exist_ok=True)
 
 
-    test_path = r"C:\Users\WorkStation01\Desktop\mb\data\be\WHU512old\test"
-    modelpath = r"result/whu/best_f1_96.05996871483723.pth"
+    test_path = r""
+    modelpath = r""
     test(net, device, modelpath=modelpath, test_DataPath=test_path)
 
